@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  mysql-service:
+    image: mysql:8.0
+    container_name: mysql-service
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: student_secure_password123
+      MYSQL_DATABASE: studentdb
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "3306:3306"
+    networks:
+      - student-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pstudent_secure_password123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: student-backend:latest
+    container_name: backend-service
+    restart: always
+    environment:
+      DB_HOST: mysql-service
+      DB_PORT: 3306
+      DB_NAME: studentdb
+      DB_USER: root
+      DB_PASSWORD: student_secure_password123
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql-service:
+        condition: service_healthy
+    networks:
+      - student-net
+
+  frontend-service:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: student-frontend:latest
+    container_name: frontend-service
+    restart: always
+    ports:
+      - "30080:80"
+    depends_on:
+      - backend-service
+    networks:
+      - student-net
+
+volumes:
+  mysql_data:
+
+networks:
+  student-net:
+    driver: bridge

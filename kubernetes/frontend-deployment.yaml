@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  labels:
+    app: student-management
+    tier: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: student-management
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: student-management
+        tier: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: student-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
